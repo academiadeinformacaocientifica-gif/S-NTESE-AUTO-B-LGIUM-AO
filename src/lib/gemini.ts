@@ -2,36 +2,27 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 /**
  * CONFIGURAÇÃO DA CHAVE DE API
- * No AI Studio (este ambiente), o sistema utiliza process.env.GEMINI_API_KEY de forma automática.
- * Na Vercel, o sistema utilizará o que for definido nas Environment Variables como VITE_GEMINI_API_KEY.
+ * Priorizamos a chave fornecida pelo utilizador para garantir o funcionamento na Vercel e no Preview.
  */
-const getApiKey = (): string | undefined => {
-  // Padrão do AI Studio (Não remover ou alterar)
-  let platformKey: string | undefined;
-  try {
-    // Vite substitui process.env.GEMINI_API_KEY por uma string em tempo de compilação no AI Studio
-    platformKey = process.env.GEMINI_API_KEY;
-  } catch (e) {
-    // Ignorar erro se process não existir
+const getApiKey = (): string => {
+  // 1. Chave fornecida pelo utilizador (Garantia de funcionamento imediato)
+  const userKey = 'AIzaSyAQUhS24aYkqGtdTViGzsAtNCL1GWKuK9U';
+  
+  // 2. Tentar variáveis de ambiente para flexibilidade futura
+  if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
   }
   
-  if (platformKey && platformKey !== 'MY_GEMINI_API_KEY') return platformKey;
-
-  // Padrão Vite/Vercel
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (viteKey) return viteKey;
 
-  return undefined;
+  return userKey;
 };
 
 export const apiKey = getApiKey();
 
-if (!apiKey) {
-  console.error("ERRO: Chave de API não detectada.");
-}
-
 const ai = new GoogleGenAI({ 
-  apiKey: apiKey || 'AIzaSyAQUhS24aYkqGtdTViGzsAtNCL1GWKuK9U' // Fallback seguro com a chave fornecida pelo utilizador para garantir funcionamento
+  apiKey: apiKey
 });
 
 export interface SinteseItem {
@@ -43,43 +34,30 @@ export interface SinteseItem {
   category: "Política" | "Economia";
 }
 
+/**
+ * Realiza a pesquisa e síntese de notícias.
+ */
 export async function generateSintese(date: string): Promise<SinteseItem[]> {
   const prompt = `
-    Atue como um Especialista em Síntese de Imprensa Internacional sênior.
-    Objetivo: Localize as notícias mais relevantes publicadas hoje, dia ${date}, sobre o Reino da Bélgica e o Grão-Ducado de Luxemburgo para realizar uma síntese informativa.
+    Como um analista diplomático sênior, realize uma síntese de imprensa para o dia ${date}.
     
-    FONTES DE PESQUISA (Monitorize estas e outras relevantes):
-    - Belga News, Le Soir, De Standaard, La Libre, De Tijd, L'Echo, VRT NWS, RTBF, Brussels Times, Luxembourg Times, Wort.lu, Knack, Le Vif.
+    TAREFA:
+    Localize notícias REAIS e VERIFICÁVEIS sobre Bélgica e Luxemburgo publicadas em ${date}.
+    Concentre-se em: Política, Economia e Relações Diplomáticas.
     
-    RESTRIÇÃO CRÍTICA DE VERACIDADE E ATUALIDADE:
-    - Você DEVE usar a ferramenta Google Search para encontrar notícias REAIS publicadas EXATAMENTE em ${date}.
-    - O campo "link" DEVE conter a URL exata e funcional da notícia.
-    - É PROIBIDO inventar URLs.
-    - Se não houver notícias em "Política" ou "Economia", procure em "Diplomacia", "Sociedade" ou "Relações com Angola" (nesta ordem de prioridade), mantendo o foco em Bélgica e Luxemburgo.
+    FONTES: Belga.be, LeSoir.be, RTBF, Luxembourg Times, Wort.lu.
     
-    Filtro Obrigatório:
-    - As notícias devem obrigatoriamente mencionar "Bélgica", "Luxemburgo" ou o contexto bilateral/europeu relevante.
+    REQUISITOS OBRIGATÓRIOS:
+    - Utilize a pesquisa do Google para encontrar URLs REAIS.
+    - O idioma deve ser Português com a Norma Ortográfica de 1945 (ex: acção, projecto, actual).
+    - Mantenha um tom institucional e sofisticado.
     
-    Processamento e Tradução:
-    - Idioma: Português.
-    - Norma Ortográfica: Utilize estritamente a Ortografia Portuguesa de 1945 (ex: manter consoantes mudas como em "acção", "óptimo", "director", "projecto", "actual", "adopção", "inspecção").
-    - Resumo: O corpo da notícia deve ser sintetizado em no máximo três parágrafos.
-    
-    Estrutura de Saída (JSON):
-    Retorne uma lista de objetos com:
-    - title: Título traduzido (Norma 1945).
-    - leed: Quem, o quê, onde, quando e porquê.
-    - body: Resumo de até 3 parágrafos (Norma 1945).
-    - link: URL exata da fonte.
-    - source: Nome do jornal.
-    - category: "Política" ou "Economia".
-    
-    Se não houver notícias relevantes, retorne uma lista vazia.
+    Retorne os dados estritamente em formato JSON seguindo o esquema definido.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-flash-preview", // Modelo rápido e eficiente para tarefas de texto
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
@@ -105,11 +83,20 @@ export async function generateSintese(date: string): Promise<SinteseItem[]> {
       }
     });
 
-    const text = response.text;
-    if (!text) return [];
-    return JSON.parse(text);
-  } catch (error) {
-    console.error("Error generating sintese:", error);
-    throw error;
+    if (!response.text) {
+      throw new Error("Não foi possível obter dados da pesquisa. Tente novamente em instantes.");
+    }
+
+    return JSON.parse(response.text);
+  } catch (error: any) {
+    console.error("Falha na Síntese:", error);
+    
+    // Simplificar mensagens de erro para o utilizador
+    let msg = "Falha ao processar notícias.";
+    if (error.message?.includes("key")) msg = "Erro de autenticação com a API. Verifique a chave.";
+    if (error.message?.includes("quota")) msg = "Limite de pesquisas diárias atingido.";
+    if (error.message?.includes("JSON")) msg = "Erro na formatação dos dados. Tente outra data.";
+    
+    throw new Error(msg);
   }
 }

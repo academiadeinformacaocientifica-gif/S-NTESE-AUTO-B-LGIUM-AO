@@ -1,54 +1,54 @@
 {
   "entities": {
-    "Clipping": {
-      "title": "Clipping",
-      "description": "A single news item from the Belgian clipping.",
+    "Sintese": {
+      "title": "Sintese",
+      "description": "Uma notícia individual da síntese de imprensa.",
       "type": "object",
       "properties": {
         "date": {
           "type": "string",
           "format": "date",
-          "description": "The date the news was published (YYYY-MM-DD)."
+          "description": "A data da notícia (YYYY-MM-DD)."
         },
         "category": {
           "type": "string",
-          "enum": ["Política", "Economia", "Diplomacia", "Sociedade"],
-          "description": "The category of the news."
+          "enum": ["Política", "Economia"],
+          "description": "A categoria da notícia."
         },
         "title": {
           "type": "string",
-          "description": "The translated title of the news."
+          "description": "O título traduzido da notícia (Norma 1945)."
         },
         "leed": {
           "type": "string",
-          "description": "The LEED (Who, What, Where, When, Why)."
+          "description": "O LEED (Quem, O quê, Onde, Quando, Porquê)."
         },
         "body": {
           "type": "string",
-          "description": "The summary of the news in 1945 orthography."
+          "description": "O resumo da notícia (Norma 1945)."
         },
         "link": {
           "type": "string",
           "format": "uri",
-          "description": "The original URL of the source."
+          "description": "O URL original da notícia."
         },
         "source": {
           "type": "string",
-          "description": "The name of the newspaper (e.g., Le Soir)."
+          "description": "O nome do jornal/fonte."
         },
         "createdAt": {
           "type": "string",
           "format": "date-time",
-          "description": "Timestamp when the clipping was generated."
+          "description": "Timestamp de criação."
         }
       },
       "required": ["date", "category", "title", "leed", "body", "link", "source", "createdAt"]
     }
   },
   "firestore": {
-    "/clippings/{clippingId}": {
-      "schema": "Clipping",
-      "description": "Collection of daily clippings."
+    "/sinteses/{sinteseId}": {
+      "schema": "Sintese",
+      "description": "Colecção de sínteses diárias."
     }
   }
 }

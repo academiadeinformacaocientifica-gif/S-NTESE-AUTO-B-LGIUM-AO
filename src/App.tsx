@@ -17,8 +17,7 @@ export default function App() {
     setLoading(true);
     const q = query(
       collection(db, 'sinteses'),
-      where('date', '==', selectedDate),
-      orderBy('createdAt', 'desc')
+      where('date', '==', selectedDate)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -45,9 +44,11 @@ export default function App() {
           await saveSintese(item, selectedDate);
         }
       }
-    } catch (err) {
-      setError('Erro ao gerar síntese. Por favor, tente novamente.');
-      console.error(err);
+    } catch (err: any) {
+      console.error("Erro na síntese:", err);
+      // Extrair mensagem detalhada se disponível
+      const detail = err.code || err.message || 'Erro desconhecido';
+      setError(`Falha na permissão ou comunicação: ${detail}. Por favor, verifique se a base de dados está activa.`);
     } finally {
       setGenerating(false);
     }
