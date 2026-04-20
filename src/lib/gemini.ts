@@ -35,29 +35,38 @@ export interface SinteseItem {
 }
 
 /**
- * Realiza a pesquisa e síntese de notícias.
+ * Realiza a pesquisa e síntese de notícias com rigor diplomático e factual.
  */
 export async function generateSintese(date: string): Promise<SinteseItem[]> {
   const prompt = `
-    Como um analista diplomático sênior, realize uma síntese de imprensa para o dia ${date}.
+    IDENTIDADE: Analista de Inteligência de Fontes Abertas (OSINT) e Especialista em Diplomacia.
     
-    TAREFA:
-    Localize notícias REAIS e VERIFICÁVEIS sobre Bélgica e Luxemburgo publicadas em ${date}.
-    Concentre-se em: Política, Economia e Relações Diplomáticas.
+    OBJETIVO: Realizar uma síntese de imprensa EXCLUSIVAMENTE para o dia ${date}.
     
-    FONTES: Belga.be, LeSoir.be, RTBF, Luxembourg Times, Wort.lu.
+    ESTRATÉGIA DE PESQUISA:
+    Use operadores de pesquisa como 'site:lesoir.be "${date}"' ou 'site:luxtimes.lu "${date}"' para garantir que as notícias são do dia correcto.
     
-    REQUISITOS OBRIGATÓRIOS:
-    - Utilize a pesquisa do Google para encontrar URLs REAIS.
-    - O idioma deve ser Português com a Norma Ortográfica de 1945 (ex: acção, projecto, actual).
-    - Mantenha um tom institucional e sofisticado.
+    LOCALIZAÇÃO: Reino da Bélgica e Grão-Ducado de Luxemburgo.
+    TEMAS: Política, Economia, Defesa, Assuntos Europeus.
     
-    Retorne os dados estritamente em formato JSON seguindo o esquema definido.
+    FONTES OBRIGATÓRIAS (Verifique estas primeiro via Google Search):
+    - Bélgica: Le Soir (lesoir.be), La Libre (lalibre.be), De Standaard (standaard.be), Belga News Agency, Brussels Times.
+    - Luxemburgo: Luxembourg Times (luxtimes.lu), Wort (wort.lu/en), Chronicle.lu, Delano.lu.
+    
+    REGRAS DE OURO (ESTRITAS):
+    1. DATA CRÍTICA: As notícias DEVEM ter sido publicadas no dia ${date}. É terminantemente proibido incluir notícias de outros dias, meses ou anos. Se não houver notícias específicas para este dia, retorne uma lista vazia [].
+    2. VERIFICAÇÃO DE LINKS: Você DEVE usar a ferramenta de pesquisa para obter a URL direta do artigo. URLs inventadas ou "dead links" são uma falha grave de segurança e integridade. Teste mentalmente se o caminho da URL segue o padrão real do site.
+    3. PROIBIÇÃO DE ALUCINAÇÃO: Se não encontrar um link REAL e funcional para uma notícia específica, NÃO inclua essa notícia na lista. É melhor ter menos notícias (ou nenhuma) do que links quebrados.
+    4. TRADUÇÃO E NORMA: Traduza para Português (Portugal) utilizando a Norma Ortográfica de 1945 (Ex: "concepção", "acção", "recepção", "projecto").
+    4. TONALIDADE: Linguagem institucional, clara e desprovida de sensacionalismo.
+    
+    ESTRUTURA JSON:
+    Retorne uma lista JSON de objetos com: title, leed, body (resumo executivo em 2-3 parágrafos), link (URL REAL), source (Nome da fonte), category ("Política" ou "Economia").
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", // Modelo rápido e eficiente para tarefas de texto
+      model: "gemini-3.1-pro-preview", // Modelo Pro para maior fidelidade factual e seguimento de instruções complexas
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],

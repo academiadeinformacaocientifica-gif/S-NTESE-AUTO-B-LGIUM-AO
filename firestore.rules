@@ -1,8 +1,39 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Safety Net
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidSintese(data) {
+      let hasKeys = data.keys().hasAll(['title', 'leed', 'body', 'link', 'source', 'category', 'date', 'createdAt']);
+      let validStrings = data.title is string && data.title.size() <= 2000 &&
+                         data.leed is string && data.leed.size() <= 5000 &&
+                         data.body is string && data.body.size() <= 30000 &&
+                         data.link is string && data.link.size() <= 2000 &&
+                         data.source is string && data.source.size() <= 500 &&
+                         data.date is string && data.category is string;
+      // In Vite/Firebase, check if createdAt exists and is a timestamp
+      let validTimestamp = data.createdAt is timestamp;
+      
+      return hasKeys && validStrings && validTimestamp;
+    }
+
+    match /sinteses/{sinteseId} {
+      // Allow public read for dashboard viewing
+      allow read: if true;
+      
+      // Allow valid document creation
+      allow create: if isValidSintese(incoming());
+      
+      // Prevent modifications to maintain institutional history
+      allow update, delete: if false;
     }
   }
 }

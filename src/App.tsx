@@ -21,8 +21,14 @@ export default function App() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SinteseDoc));
-      setSinteses(docs);
+      // Ordenar localmente por categoria (Política antes de Economia)
+      const sortedDocs = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as SinteseDoc))
+        .sort((a, b) => {
+          if (a.category === b.category) return 0;
+          return a.category === 'Política' ? -1 : 1;
+        });
+      setSinteses(sortedDocs);
       setLoading(false);
     }, (err) => {
       console.error("Firestore error:", err);
