@@ -170,7 +170,7 @@ export default function App() {
             >
               <Loader2 className="animate-spin mb-4" size={48} />
               <p className="font-serif italic text-xl">Processando síntese de imprensa internacional...</p>
-              <p className="text-xs mt-2 uppercase tracking-widest">Redigindo em norma de 1945 para ${selectedDate}</p>
+              <p className="text-xs mt-2 uppercase tracking-widest">Redigindo em norma de 1945 para {selectedDate}</p>
             </motion.div>
           ) : error ? (
             <motion.div 

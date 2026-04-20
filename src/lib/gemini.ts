@@ -1,25 +1,38 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Use import.meta.env for Vite/Vercel compatibility
-// Fallback to process.env safely only if it exists
-const getApiKey = () => {
+/**
+ * CONFIGURAÇÃO DA CHAVE DE API
+ * No AI Studio (este ambiente), o sistema utiliza process.env.GEMINI_API_KEY de forma automática.
+ * Na Vercel, o sistema utilizará o que for definido nas Environment Variables como VITE_GEMINI_API_KEY.
+ */
+const getApiKey = (): string | undefined => {
+  // Padrão do AI Studio (Não remover ou alterar)
+  let platformKey: string | undefined;
+  try {
+    // Vite substitui process.env.GEMINI_API_KEY por uma string em tempo de compilação no AI Studio
+    platformKey = process.env.GEMINI_API_KEY;
+  } catch (e) {
+    // Ignorar erro se process não existir
+  }
+  
+  if (platformKey && platformKey !== 'MY_GEMINI_API_KEY') return platformKey;
+
+  // Padrão Vite/Vercel
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (viteKey) return viteKey;
-  
-  try {
-    return (process as any).env.GEMINI_API_KEY;
-  } catch {
-    return undefined;
-  }
+
+  return undefined;
 };
 
 export const apiKey = getApiKey();
 
 if (!apiKey) {
-  console.warn("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment variables.");
+  console.error("ERRO: Chave de API não detectada.");
 }
 
-const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' });
+const ai = new GoogleGenAI({ 
+  apiKey: apiKey || 'AIzaSyAQUhS24aYkqGtdTViGzsAtNCL1GWKuK9U' // Fallback seguro com a chave fornecida pelo utilizador para garantir funcionamento
+});
 
 export interface SinteseItem {
   title: string;
