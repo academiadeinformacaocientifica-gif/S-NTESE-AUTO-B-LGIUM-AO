@@ -5,12 +5,13 @@ import { GoogleGenAI, Type } from "@google/genai";
  * Seguindo as diretrizes de segurança: usamos process.env.GEMINI_API_KEY.
  */
 const getApiKey = (): string => {
-  const envKey = process.env.GEMINI_API_KEY;
-  if (envKey) return envKey;
-  
-  // Fallback para Vite em desenvolvimento (se configurado)
+  // Em ambientes Vite (como Vercel/Local), as variáveis públicas devem ter o prefixo VITE_
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (viteKey) return viteKey;
+
+  // Fallback para process.env caso esteja num ambiente Node/SSR
+  const envKey = (process as any).env?.GEMINI_API_KEY;
+  if (envKey) return envKey;
 
   return '';
 };
