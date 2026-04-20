@@ -1,7 +1,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey! });
+// Use import.meta.env for Vite/Vercel compatibility
+// Fallback to process.env safely only if it exists
+const getApiKey = () => {
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (viteKey) return viteKey;
+  
+  try {
+    return (process as any).env.GEMINI_API_KEY;
+  } catch {
+    return undefined;
+  }
+};
+
+export const apiKey = getApiKey();
+
+if (!apiKey) {
+  console.warn("GEMINI_API_KEY not found. Please set VITE_GEMINI_API_KEY in your environment variables.");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key' });
 
 export interface SinteseItem {
   title: string;

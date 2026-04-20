@@ -52,31 +52,33 @@ export const SinteseCard: React.FC<SinteseCardProps> = ({ sintese }) => {
       </div>
 
       <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#1a3a5c] font-bold leading-tight mb-6 hover:text-[#c8a84b] transition-colors">
-        <a href={sintese.link} target="_blank" rel="noopener noreferrer">
-          {sintese.title}
+        <a href={sintese.link || '#'} target="_blank" rel="noopener noreferrer">
+          {sintese.title || 'Sem Título'}
         </a>
       </h2>
 
       <div className="border-l-4 border-[#c8a84b] pl-4 sm:pl-6 mb-8 italic text-gray-600 leading-relaxed font-serif text-base sm:text-lg">
-        <p>{sintese.leed}</p>
+        <p>{sintese.leed || 'Resumo indisponível.'}</p>
       </div>
 
       <div className="space-y-4 sm:space-y-6 text-gray-800 leading-relaxed text-base sm:text-lg font-sans">
-        {sintese.body.split('\n').map((paragraph, idx) => (
+        {(sintese.body || '').split('\n').map((paragraph, idx) => (
           <p key={idx}>{paragraph}</p>
         ))}
       </div>
 
       <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col xs:flex-row justify-between items-start xs:items-center gap-4">
-        <a 
-          href={sintese.link} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm font-bold text-[#1a3a5c] hover:text-[#c8a84b] transition-colors uppercase tracking-wider"
-        >
-          <ExternalLink size={16} />
-          Ler notícia original
-        </a>
+        {sintese.link && (
+          <a 
+            href={sintese.link} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm font-bold text-[#1a3a5c] hover:text-[#c8a84b] transition-colors uppercase tracking-wider"
+          >
+            <ExternalLink size={16} />
+            Ler notícia original
+          </a>
+        )}
       </div>
     </motion.div>
   );

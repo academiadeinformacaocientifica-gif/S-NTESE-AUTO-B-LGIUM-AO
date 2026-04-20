@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { generateSintese, SinteseItem } from './lib/gemini';
+import { generateSintese, SinteseItem, apiKey } from './lib/gemini';
 import { SinteseCard } from './components/SinteseCard';
 import { Loader2, RefreshCw, ChevronLeft, ChevronRight, Newspaper, FileText, Mail, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -61,11 +61,14 @@ export default function App() {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredSinteses = sinteses.filter(s => 
-    s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.body.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.leed.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSinteses = sinteses.filter(s => {
+    const search = searchTerm.toLowerCase();
+    return (
+      (s.title?.toLowerCase() || '').includes(search) ||
+      (s.body?.toLowerCase() || '').includes(search) ||
+      (s.leed?.toLowerCase() || '').includes(search)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-[#fdfcf9] text-[#1a1a1a] font-sans selection:bg-[#c8a84b] selection:text-white">
@@ -177,7 +180,14 @@ export default function App() {
               className="bg-red-50 border-l-4 border-red-500 p-8 text-red-800"
             >
               <p className="font-serif text-xl mb-2 italic">Aviso de Sistema</p>
-              <p>{error}</p>
+              <div className="text-sm space-y-2">
+                <p>{error}</p>
+                {!apiKey && (
+                  <p className="mt-2 font-bold p-2 bg-red-100 rounded">
+                    ERRO: A chave de API (GEMINI_API_KEY) não foi detectada. Verifique as variáveis de ambiente na Vercel.
+                  </p>
+                )}
+              </div>
               <button 
                 onClick={handleGenerate}
                 className="mt-4 text-sm font-bold underline uppercase tracking-widest"
