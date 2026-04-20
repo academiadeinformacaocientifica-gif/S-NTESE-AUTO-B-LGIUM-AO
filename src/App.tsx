@@ -44,17 +44,20 @@ export default function App() {
     try {
       const data = await generateSintese(selectedDate);
       if (data.length === 0) {
-        setError(`Nenhuma ocorrência encontrada para a data ${selectedDate}`);
+        setError(`Nenhuma ocorrência encontrada para a data ${selectedDate}. Tente outra data ou verifique se há eventos relevantes hoje.`);
       } else {
-        for (const item of data) {
-          await saveSintese(item, selectedDate);
+        try {
+          for (const item of data) {
+            await saveSintese(item, selectedDate);
+          }
+        } catch (dbErr: any) {
+          console.error("Erro ao gravar no Firestore:", dbErr);
+          setError("As notícias foram geradas, mas houve um erro ao guardá-las na base de dados. Verifique as permissões do Firestore.");
         }
       }
-    } catch (err: any) {
-      console.error("Erro na síntese:", err);
-      // Extrair mensagem detalhada se disponível
-      const detail = err.code || err.message || 'Erro desconhecido';
-      setError(`Falha na permissão ou comunicação: ${detail}. Por favor, verifique se a base de dados está activa.`);
+    } catch (aiErr: any) {
+      console.error("Erro na síntese IA:", aiErr);
+      setError(`Falha ao processar as notícias via IA: ${aiErr.message}. Por favor, tente novamente.`);
     } finally {
       setGenerating(false);
     }

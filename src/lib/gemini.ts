@@ -1,22 +1,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 /**
- * CONFIGURAÇÃO DA CHAVE DE API
- * Priorizamos a chave fornecida pelo utilizador para garantir o funcionamento na Vercel e no Preview.
+ * CONFIGURAÇÃO DA API GEMINI
+ * Seguindo as diretrizes de segurança: usamos process.env.GEMINI_API_KEY.
  */
 const getApiKey = (): string => {
-  // 1. Chave fornecida pelo utilizador (Garantia de funcionamento imediato)
-  const userKey = 'AIzaSyAQUhS24aYkqGtdTViGzsAtNCL1GWKuK9U';
+  const envKey = process.env.GEMINI_API_KEY;
+  if (envKey) return envKey;
   
-  // 2. Tentar variáveis de ambiente para flexibilidade futura
-  if (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) {
-    return process.env.GEMINI_API_KEY;
-  }
-  
+  // Fallback para Vite em desenvolvimento (se configurado)
   const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (viteKey) return viteKey;
 
-  return userKey;
+  return '';
 };
 
 export const apiKey = getApiKey();
@@ -38,37 +34,27 @@ export interface SinteseItem {
  * Realiza a pesquisa e síntese de notícias com rigor diplomático e factual.
  */
 export async function generateSintese(date: string): Promise<SinteseItem[]> {
-  const prompt = `
-    IDENTIDADE: Analista de Inteligência de Fontes Abertas (OSINT) e Especialista em Diplomacia.
-    
-    OBJETIVO: Realizar uma síntese de imprensa EXCLUSIVAMENTE para o dia ${date}.
-    
-    ESTRATÉGIA DE PESQUISA:
-    Use operadores de pesquisa como 'site:lesoir.be "${date}"' ou 'site:luxtimes.lu "${date}"' para garantir que as notícias são do dia correcto.
-    
-    LOCALIZAÇÃO: Reino da Bélgica e Grão-Ducado de Luxemburgo.
-    TEMAS: Política, Economia, Defesa, Assuntos Europeus.
-    
-    FONTES OBRIGATÓRIAS (Verifique estas primeiro via Google Search):
-    - Bélgica: Le Soir (lesoir.be), La Libre (lalibre.be), De Standaard (standaard.be), Belga News Agency, Brussels Times.
-    - Luxemburgo: Luxembourg Times (luxtimes.lu), Wort (wort.lu/en), Chronicle.lu, Delano.lu.
-    
-    REGRAS DE OURO (ESTRITAS):
-    1. DATA CRÍTICA: As notícias DEVEM ter sido publicadas no dia ${date}. É terminantemente proibido incluir notícias de outros dias, meses ou anos. Se não houver notícias específicas para este dia, retorne uma lista vazia [].
-    2. VERIFICAÇÃO DE LINKS: Você DEVE usar a ferramenta de pesquisa para obter a URL direta do artigo. URLs inventadas ou "dead links" são uma falha grave de segurança e integridade. Teste mentalmente se o caminho da URL segue o padrão real do site.
-    3. PROIBIÇÃO DE ALUCINAÇÃO: Se não encontrar um link REAL e funcional para uma notícia específica, NÃO inclua essa notícia na lista. É melhor ter menos notícias (ou nenhuma) do que links quebrados.
-    4. TRADUÇÃO E NORMA: Traduza para Português (Portugal) utilizando a Norma Ortográfica de 1945 (Ex: "concepção", "acção", "recepção", "projecto").
-    4. TONALIDADE: Linguagem institucional, clara e desprovida de sensacionalismo.
-    
-    ESTRUTURA JSON:
-    Retorne uma lista JSON de objetos com: title, leed, body (resumo executivo em 2-3 parágrafos), link (URL REAL), source (Nome da fonte), category ("Política" ou "Economia").
-  `;
-
   try {
+    if (!apiKey) {
+      throw new Error("A chave de API (GEMINI_API_KEY) não está configurada no ambiente.");
+    }
+
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-pro-preview", // Modelo Pro para maior fidelidade factual e seguimento de instruções complexas
-      contents: prompt,
+      model: "gemini-3-flash-preview",
+      contents: `Realize uma síntese de imprensa EXCLUSIVAMENTE para o dia ${date}.`,
       config: {
+        systemInstruction: `
+          IDENTIDADE: Analista de Inteligência de Fontes Abertas (OSINT) e Especialista em Diplomacia.
+          OBJETIVO: Síntese de imprensa para o dia solicitado.
+          LOCALIZAÇÃO: Reino da Bélgica e Grão-Ducado de Luxemburgo.
+          PESQUISA: Use 'site:lesoir.be "${date}"', 'site:luxtimes.lu "${date}"', 'Belga news ${date}'.
+          REGRAS:
+          1. DATA: Apenas notícias de ${date}.
+          2. LINKS: URLs REAIS e funcionais. Proibido inventar.
+          3. TRADUÇÃO: Português (Portugal) norma 1945.
+          4. TONALIDADE: Institucional.
+          RETORNO: Lista JSON [ {title, leed, body, link, source, category: "Política"|"Economia"} ]
+        `,
         tools: [{ googleSearch: {} }],
         responseMimeType: "application/json",
         responseSchema: {
@@ -92,20 +78,11 @@ export async function generateSintese(date: string): Promise<SinteseItem[]> {
       }
     });
 
-    if (!response.text) {
-      throw new Error("Não foi possível obter dados da pesquisa. Tente novamente em instantes.");
-    }
-
+    if (!response.text) return [];
     return JSON.parse(response.text);
   } catch (error: any) {
-    console.error("Falha na Síntese:", error);
-    
-    // Simplificar mensagens de erro para o utilizador
-    let msg = "Falha ao processar notícias.";
-    if (error.message?.includes("key")) msg = "Erro de autenticação com a API. Verifique a chave.";
-    if (error.message?.includes("quota")) msg = "Limite de pesquisas diárias atingido.";
-    if (error.message?.includes("JSON")) msg = "Erro na formatação dos dados. Tente outra data.";
-    
-    throw new Error(msg);
+    console.error("Erro na Chamada Gemini:", error);
+    const detail = error.message || "Erro desconhecido";
+    throw new Error(`Falha na IA: ${detail.substring(0, 100)}`);
   }
 }
